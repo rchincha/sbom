@@ -7,46 +7,91 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/anchore/syft/syft"
+	"github.com/anchore/syft/syft/formats"
+	"github.com/anchore/syft/syft/formats/common/spdxhelpers"
+	"github.com/anchore/syft/syft/formats/spdxjson"
+	"github.com/anchore/syft/syft/pkg/cataloger"
+	"github.com/anchore/syft/syft/sbom"
+	"github.com/anchore/syft/syft/source"
 	"github.com/minio/sha256-simd"
 	"github.com/rs/zerolog/log"
+	"github.com/spdx/tools-golang/spdx"
 	k8spdx "sigs.k8s.io/bom/pkg/spdx"
-	"stackerbuild.io/sbom/pkg/build"
-	"stackerbuild.io/sbom/pkg/errors"
+	stbom "stackerbuild.io/stacker-bom/pkg/bom"
+	"stackerbuild.io/stacker-bom/pkg/buildgen"
 )
 
-func ParsePackage(input, output, author, organization, license, pkgname, pkgversion string) error {
+func BuildPackageFromDir(input, pkgname string, kdoc *k8spdx.Document, kpkg *k8spdx.Package,
+) error {
 	if _, err := os.Lstat(input); err != nil {
 		log.Error().Err(err).Str("path", input).Msg("unable to find path")
 
 		return err
 	}
 
-	kdoc := k8spdx.NewDocument()
-	kdoc.Creator.Person = author
-	kdoc.Creator.Organization = organization
-	kdoc.Creator.Tool = []string{fmt.Sprintf("stackerbuild.io/sbom@%s", build.Commit)}
-
-	pkg := &k8spdx.Package{
-		Entity: k8spdx.Entity{
-			Name: pkgname,
-		},
-		Version: pkgversion,
-		Originator: struct {
-			Person       string
-			Organization string
-		}{
-			Person: author,
-		},
-		LicenseDeclared: license,
-	}
-
-	if err := kdoc.AddPackage(pkg); err != nil {
-		log.Error().Err(err).Msg("unable to add package to doc")
+	// use anchore/syft to catalog packages
+	src, err := source.NewFromDirectoryWithName(input, pkgname)
+	if err != nil {
+		log.Error().Err(err).Str("path", input).Msg("unable to parse path")
 
 		return err
 	}
 
-	err := filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
+	scfg := cataloger.Config{
+		Search: cataloger.SearchConfig{
+			IncludeIndexedArchives:   true,
+			IncludeUnindexedArchives: true,
+			Scope:                    source.AllLayersScope,
+		},
+		Parallelism: 1,
+	}
+
+	pkgCatalog, relationships, actualDistro, err := syft.CatalogPackages(&src, scfg)
+	if err != nil {
+		log.Error().Err(err).Str("path", input).Msg("unable to parse packages")
+
+		return err
+	}
+
+	bom := sbom.SBOM{
+		Artifacts: sbom.Artifacts{
+			PackageCatalog:    pkgCatalog,
+			LinuxDistribution: actualDistro,
+		},
+		Relationships: relationships,
+		Source:        src.Metadata,
+	}
+	sdoc := spdxhelpers.ToFormatModel(bom)
+	sdoc.CreationInfo.Creators = []spdx.Creator{}
+
+	log.Info().Interface("syft bom", bom).Msg("syft bom generated")
+
+	contents, err := formats.Encode(bom, spdxjson.Format())
+	if err != nil {
+		return err
+	}
+
+	file, err := os.CreateTemp("", "stacker-bom-syft-")
+	if err != nil {
+		return err
+	}
+
+	defer os.Remove(file.Name())
+
+	if err := os.WriteFile(file.Name(), contents, 0o644); err != nil { //nolint:gosec,gomnd
+		return err
+	}
+
+	tdoc, err := k8spdx.OpenDoc(file.Name())
+	if err != nil {
+		return err
+	}
+
+	kdoc.Files = stbom.MergeMaps(kdoc.Files, tdoc.Files)
+	kdoc.Packages = stbom.MergeMaps(kdoc.Packages, tdoc.Packages)
+
+	err = filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -75,7 +120,7 @@ func ParsePackage(input, output, author, organization, license, pkgname, pkgvers
 				Checksum: map[string]string{"SHA256": hex.EncodeToString(cksum)},
 			},
 		)
-		if err := pkg.AddFile(file); err != nil {
+		if err := kpkg.AddFile(file); err != nil {
 			log.Error().Err(err).Msg("unable to add file to package")
 
 			return err
@@ -89,8 +134,39 @@ func ParsePackage(input, output, author, organization, license, pkgname, pkgvers
 		return err
 	}
 
-	if err := kdoc.Write(output); err != nil {
-		log.Error().Err(err).Str("path", output).Msg("unable to write output")
+	return nil
+}
+
+func BuildPackageFromFile(input string, kpkg *k8spdx.Package) error {
+	if _, err := os.Lstat(input); err != nil {
+		log.Error().Err(err).Str("path", input).Msg("unable to find path")
+
+		return err
+	}
+
+	fhandle, err := os.Open(input)
+	if err != nil {
+		return err
+	}
+	defer fhandle.Close()
+
+	shaWriter := sha256.New()
+	if _, err := io.Copy(shaWriter, fhandle); err != nil {
+		return err
+	}
+
+	cksum := shaWriter.Sum(nil)
+
+	file := k8spdx.NewFile()
+	file.SetEntity(
+		&k8spdx.Entity{
+			Name:     input,
+			Checksum: map[string]string{"SHA256": hex.EncodeToString(cksum)},
+		},
+	)
+
+	if err := kpkg.AddFile(file); err != nil {
+		log.Error().Err(err).Msg("unable to add file to package")
 
 		return err
 	}
@@ -98,32 +174,55 @@ func ParsePackage(input, output, author, organization, license, pkgname, pkgvers
 	return nil
 }
 
-func Verify(input string) error {
-	kdoc, err := k8spdx.OpenDoc(input)
-	if err != nil {
-		log.Error().Err(err).Str("path", input).Msg("unable to open SBOM")
+func BuildPackage(inputDirs, inputFiles []string, output, name, author, organization,
+	license, pkgname, pkgversion string,
+) error {
+	kdoc := k8spdx.NewDocument()
+	kdoc.Name = name
+	kdoc.Creator.Person = author
+	kdoc.Creator.Organization = organization
+	kdoc.Creator.Tool = []string{fmt.Sprintf("stackerbuild.io/sbom@%s", buildgen.Commit)}
+
+	kpkg := &k8spdx.Package{
+		Entity: k8spdx.Entity{
+			Name: pkgname,
+		},
+		Version: pkgversion,
+		Originator: struct {
+			Person       string
+			Organization string
+		}{
+			Person: author,
+		},
+		LicenseDeclared: license,
+	}
+
+	if err := kdoc.AddPackage(kpkg); err != nil {
+		log.Error().Err(err).Msg("unable to add package to doc")
 
 		return err
 	}
 
-	if kdoc == nil {
-		log.Error().Str("path", input).Msg("invalid SBOM document")
+	for _, dir := range inputDirs {
+		log.Info().Str("dir", dir).Str("package", pkgname).Msg("adding dir to package")
 
-		return fmt.Errorf("%s: %w", input, errors.ErrInvalidDoc)
+		if err := BuildPackageFromDir(dir, pkgname, kdoc, kpkg); err != nil {
+			return err
+		}
 	}
 
-	for _, pkg := range kdoc.Packages {
-		for _, file := range pkg.Files() {
-			file.Entity.Opts = &k8spdx.ObjectOptions{}
+	for _, file := range inputFiles {
+		log.Info().Str("file", file).Str("package", pkgname).Msg("adding dir to package")
 
-			log.Info().Str("path", file.FileName).Msg("file entity")
-
-			if err := file.ReadSourceFile(file.FileName); err != nil {
-				log.Error().Err(err).Str("path", file.FileName).Msg("doesn't match entry in SBOM document")
-
-				return err
-			}
+		if err := BuildPackageFromFile(file, kpkg); err != nil {
+			return err
 		}
+	}
+
+	if err := kdoc.Write(output); err != nil {
+		log.Error().Err(err).Str("path", output).Msg("unable to write output")
+
+		return err
 	}
 
 	return nil

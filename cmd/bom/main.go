@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/sirupsen/logrus"
-	"stackerbuild.io/sbom/pkg/cli"
+	"stackerbuild.io/stacker-bom/pkg/cli"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	log.Logger = log.With().Caller().Logger().Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	if err := cli.NewCli().Execute(); err != nil {
+	if err := cli.NewRootCmd().Execute(); err != nil {
 		log.Error().Err(err).Msg("action failed")
 		os.Exit(1)
 	}
