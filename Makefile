@@ -5,9 +5,17 @@ COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),$(COMMIT_HAS
 BINDIR=bin
 TOOLSDIR := $(shell pwd)/hack/tools
 GOLINTER := $(TOOLSDIR)/bin/golangci-lint
-GOLINTER_VERSION := v1.51.2
+GOLINTER_VERSION := v1.52.2
 
-BINARY := stacker-sbom
+# OCI registry
+ZOT := $(TOOLSDIR)/bin/zot
+ZOT_VERSION := 1.4.3
+# OCI registry clients
+ORAS := $(TOOLSDIR)/bin/oras
+ORAS_VERSION := 1.0.0-rc.1
+BATS := $(TOOLSDIR)/bin/bats
+
+BINARY := stacker-bom
 OS ?= linux
 ARCH ?= amd64
 
@@ -22,15 +30,38 @@ $(GOLINTER):
 .PHONY: binary
 binary:
 	mkdir -p ${BINDIR}
-	GOOS=${OS} GOARCH=${ARCH} go build -v -trimpath -ldflags "-X stackerbuild.io/sbom/pkg/build.ReleaseTag=${RELEASE_TAG} -X stackerbuild.io/sbom/pkg/build.Commit=${COMMIT} -s -w" -o ${BINDIR}/${BINARY}-${OS}-${ARCH} ./cmd/sbom/...
+	CGO_ENABLED=1 GOOS=${OS} GOARCH=${ARCH} go build -tags netgo -v -trimpath -ldflags "-X stackerbuild.io/stacker-bom/pkg/buildgen.ReleaseTag=${RELEASE_TAG} -X stackerbuild.io/stacker-bom/pkg/buildgen.Commit=${COMMIT} -X stackerbuild.io/stacker-bom/pkg/cli.Binary=${BINARY} -linkmode external -extldflags -static"  -o ${BINDIR}/${BINARY}-${OS}-${ARCH} ./cmd/bom/...
 
 .PHONY: lint
 lint: ./golangcilint.yaml $(GOLINTER)
 	$(GOLINTER) --config ./golangcilint.yaml run --enable-all --out-format=colored-line-number ./...
 
+$(ZOT):
+	mkdir -p $(TOOLSDIR)/bin
+	curl -Lo $(ZOT) https://github.com/project-zot/zot/releases/download/v$(ZOT_VERSION)/zot-linux-amd64-minimal
+	chmod +x $(ZOT)
+
+$(TRUST):
+	mkdir -p $(TOOLSDIR)/bin
+	curl -Lo $(TRUST) https://github.com/project-machine/trust/releases/download/${TRUST_VERSION}/trust
+	chmod +x $(TRUST)
+
+$(ORAS):
+	mkdir -p $(TOOLSDIR)/bin
+	curl -Lo oras.tar.gz https://github.com/oras-project/oras/releases/download/v$(ORAS_VERSION)/oras_$(ORAS_VERSION)_linux_amd64.tar.gz
+	tar xvzf oras.tar.gz -C $(TOOLSDIR)/bin oras
+	rm oras.tar.gz
+
+$(BATS):
+	rm -rf bats-core; \
+		git clone https://github.com/bats-core/bats-core.git; \
+		cd bats-core; ./install.sh $(TOOLSDIR); cd ..; \
+		rm -rf bats-core
+
 .PHONY: test
-test:
+test: $(BATS) $(ZOT) $(ORAS)
 	go test -v -race -cover -coverpkg=./...
+	$(BATS) --trace --verbose-run --print-output-on-failure --show-output-of-passing-tests test/*.bats
 
 .PHONY: clean
 clean:
