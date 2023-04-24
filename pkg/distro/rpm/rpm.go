@@ -97,11 +97,14 @@ func InstalledPackage(doc *spdx.Document, pkg *rpmdb.PackageInfo) error {
 }
 
 func InstalledPackages(doc *spdx.Document) error {
-	pkgdb, err := rpmdb.Open("/var/lib/rpm/rpmdb.sqlite")
+	pkgdb, err := rpmdb.Open("/var/lib/rpm/Packages")
 	if err != nil {
-		log.Error().Err(err).Msg("unable to open package db")
+		pkgdb, err = rpmdb.Open("/var/lib/rpm/rpmdb.sqlite")
+		if err != nil {
+			log.Error().Err(err).Msg("unable to open package db")
 
-		return err
+			return err
+		}
 	}
 
 	pkgList, err := pkgdb.ListPackages()
