@@ -66,6 +66,8 @@ func MergeDocuments(dir, name, author, organization, output string) error {
 	sdoc.Creator.Organization = organization
 	sdoc.Creator.Tool = []string{fmt.Sprintf("stackerbuild.io/stacker-bom@%s", buildgen.Commit)}
 
+	mcount := 0
+
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -85,6 +87,9 @@ func MergeDocuments(dir, name, author, organization, output string) error {
 		sdoc.Files = MergeMaps(sdoc.Files, doc.Files)
 		sdoc.Packages = MergeMaps(sdoc.Packages, doc.Packages)
 
+		log.Info().Str("path", path).Msg("file found for merging")
+		mcount++
+
 		return nil
 	})
 	if err != nil {
@@ -93,10 +98,14 @@ func MergeDocuments(dir, name, author, organization, output string) error {
 		return err
 	}
 
-	if err := WriteDocument(sdoc, output); err != nil {
-		log.Error().Err(err).Str("name", output).Msg("unable to write merged doc")
+	if mcount > 0 {
+		if err := WriteDocument(sdoc, output); err != nil {
+			log.Error().Err(err).Str("name", output).Msg("unable to write merged doc")
 
-		return err
+			return err
+		}
+
+		log.Info().Int("files", mcount).Str("dir", dir).Str("output", output).Msg("merged files")
 	}
 
 	return nil

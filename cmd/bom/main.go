@@ -2,24 +2,17 @@ package main
 
 import (
 	"os"
-	"time"
 
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
-	"github.com/sirupsen/logrus"
+	zlog "github.com/rs/zerolog/log"
 	"stackerbuild.io/stacker-bom/pkg/cli"
+	"stackerbuild.io/stacker-bom/pkg/log"
 )
 
 func main() {
-	// setup logging
-	logrus.SetLevel(logrus.ErrorLevel)
-
-	zerolog.TimeFieldFormat = time.RFC3339
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	log.Logger = log.With().Caller().Logger().Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	log.SetLevel(log.InfoLevel)
 
 	if err := cli.NewRootCmd().Execute(); err != nil {
-		log.Error().Err(err).Msg("action failed")
+		zlog.Error().Err(err).Msg("action failed")
 		os.Exit(1)
 	}
 }
