@@ -36,7 +36,7 @@ func checkBOM(input, pathEntry string) error {
 				return err
 			}
 
-			if file.Name != pathEntry && file.Name != symlink {
+			if file.Name != pathEntry && symlink != pathEntry {
 				continue
 			}
 
