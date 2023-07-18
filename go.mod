@@ -6,9 +6,11 @@ require (
 	github.com/anchore/syft v0.80.0
 	github.com/gabriel-vasile/mimetype v1.4.2
 	github.com/knqyf263/go-rpmdb v0.0.0-20230301153543-ba94b245509b
+	github.com/martencassel/go-apkutils v0.2.9
 	github.com/minio/sha256-simd v1.0.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/rs/zerolog v1.29.1
+	github.com/sassoftware/go-rpmutils v0.2.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spdx/tools-golang v0.5.0
 	github.com/spf13/cobra v1.7.0
@@ -97,7 +99,6 @@ require (
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
-	github.com/sassoftware/go-rpmutils v0.2.0 // indirect
 	github.com/scylladb/go-set v1.0.3-0.20200225121959-cc7b2070d91e // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.6.0 // indirect
 	github.com/sergi/go-diff v1.3.1 // indirect

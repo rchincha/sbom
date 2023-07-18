@@ -9,10 +9,12 @@ GOLINTER_VERSION := v1.52.2
 
 # OCI registry
 ZOT := $(TOOLSDIR)/bin/zot
-ZOT_VERSION := 1.4.3
+ZOT_VERSION := 2.0.0-rc5
 # OCI registry clients
 ORAS := $(TOOLSDIR)/bin/oras
 ORAS_VERSION := 1.0.0-rc.1
+REGCTL := $(TOOLSDIR)/bin/regctl
+REGCTL_VERSION := 0.5.0
 BATS := $(TOOLSDIR)/bin/bats
 
 BINARY := stacker-bom
@@ -52,6 +54,11 @@ $(ORAS):
 	tar xvzf oras.tar.gz -C $(TOOLSDIR)/bin oras
 	rm oras.tar.gz
 
+$(REGCTL):
+	mkdir -p $(TOOLSDIR)/bin
+	curl -Lo $(REGCTL) https://github.com/regclient/regclient/releases/download/v$(REGCTL_VERSION)/regctl-linux-amd64
+	chmod +x $(REGCTL)
+
 $(BATS):
 	rm -rf bats-core; \
 		git clone https://github.com/bats-core/bats-core.git; \
@@ -59,7 +66,7 @@ $(BATS):
 		rm -rf bats-core
 
 .PHONY: test
-test: $(BATS) $(ZOT) $(ORAS)
+test: $(BATS) $(ZOT) $(ORAS) $(REGCTL)
 	go test -v -race -cover -coverpkg=./...
 	$(BATS) --trace --verbose-run --print-output-on-failure --show-output-of-passing-tests test/*.bats
 

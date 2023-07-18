@@ -53,6 +53,8 @@ EOF
 		echo "Timed out waiting for zot"
 		exit 1
 	fi
+  # setup a OCI client
+  regctl registry set --tls=disabled $ZOT_HOST:$ZOT_PORT
 }
 
 function common_teardown {

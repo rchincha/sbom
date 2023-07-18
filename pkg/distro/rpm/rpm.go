@@ -3,14 +3,152 @@ package rpm
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 
 	rpmdb "github.com/knqyf263/go-rpmdb/pkg"
 	"github.com/rs/zerolog/log"
+	"github.com/sassoftware/go-rpmutils"
 	"sigs.k8s.io/bom/pkg/spdx"
+	"stackerbuild.io/stacker-bom/pkg/bom"
+	"stackerbuild.io/stacker-bom/pkg/buildgen"
 )
+
+// ParsePackage given a rpm pkg emits a sbom.
+func ParsePackage(input, output, author, organization, license string) error {
+	fhandle, err := os.Open(input)
+	if err != nil {
+		log.Error().Err(err).Str("path", input).Msg("unable to open file")
+
+		return err
+	}
+
+	defer fhandle.Close()
+
+	rpmfile, err := rpmutils.ReadRpm(fhandle)
+	if err != nil {
+		log.Error().Err(err).Str("path", input).Msg("unable to load package")
+
+		return err
+	}
+
+	// Getting metadata
+	nevra, err := rpmfile.Header.GetNEVRA()
+	if err != nil {
+		return err
+	}
+
+	vendor, err := rpmfile.Header.GetStrings(rpmutils.VENDOR)
+	if err != nil {
+		return err
+	}
+
+	lic, err := rpmfile.Header.GetStrings(rpmutils.LICENSE)
+	if err != nil {
+		return err
+	}
+
+	var pkglicense string
+
+	if len(lic) == 0 {
+		pkglicense = license
+	} else {
+		pkglicense = strings.Join(lic, " ")
+	}
+
+	desc, err := rpmfile.Header.GetStrings(rpmutils.DESCRIPTION)
+	if err != nil {
+		return err
+	}
+
+	url, err := rpmfile.Header.GetStrings(rpmutils.URL)
+	if err != nil {
+		return err
+	}
+
+	sdoc := spdx.NewDocument()
+	sdoc.Creator.Person = author
+	sdoc.Creator.Organization = organization
+	sdoc.Creator.Tool = []string{"stackerbuild.io/sbom"}
+	sdoc.Creator.Tool = []string{fmt.Sprintf("stackerbuild.io/sbom@%s", buildgen.Commit)}
+
+	spkg := &spdx.Package{
+		Entity: spdx.Entity{
+			Name:             nevra.Name,
+			DownloadLocation: url[0],
+		},
+		Version: nevra.Version,
+		Comment: desc[0],
+		Originator: struct {
+			Person       string
+			Organization string
+		}{
+			Organization: vendor[0],
+		},
+		LicenseDeclared: pkglicense,
+	}
+
+	if err := sdoc.AddPackage(spkg); err != nil {
+		log.Error().Err(err).Msg("unable to add package to doc")
+
+		return err
+	}
+
+	finfos, err := rpmfile.Header.GetFiles()
+	if err != nil {
+		return err
+	}
+
+	for _, finfo := range finfos {
+		info, err := os.Lstat(finfo.Name())
+		if err != nil {
+			log.Warn().Str("package", nevra.Name).Str("version", nevra.Version).Str("file", finfo.Name()).Msg("file is missing!")
+
+			continue
+		}
+
+		if !info.Mode().IsRegular() {
+			continue
+		}
+
+		fhandle, err := os.Open(finfo.Name())
+		if err != nil {
+			return err
+		}
+		defer fhandle.Close()
+
+		shaWriter := sha256.New()
+		if _, err := io.Copy(shaWriter, fhandle); err != nil {
+			return err
+		}
+
+		cksum := shaWriter.Sum(nil)
+
+		sfile := spdx.NewFile()
+		sfile.SetEntity(
+			&spdx.Entity{
+				Name:     finfo.Name(),
+				Checksum: map[string]string{"SHA256": hex.EncodeToString(cksum)},
+			},
+		)
+
+		if err := spkg.AddFile(sfile); err != nil {
+			log.Error().Err(err).Msg("unable to add file to package")
+
+			return err
+		}
+	}
+
+	if err := bom.WriteDocument(sdoc, output); err != nil {
+		log.Error().Err(err).Str("path", output).Msg("unable to write output")
+
+		return err
+	}
+
+	return nil
+}
 
 func InstalledPackage(doc *spdx.Document, pkg *rpmdb.PackageInfo) error {
 	spkg := &spdx.Package{
