@@ -69,8 +69,8 @@ func ParsePackage(input, output, author, organization, license string) error {
 			break
 		}
 
-		if hdr.Typeflag == tar.TypeDir {
-			log.Warn().Str("name", hdr.Name).Msg("ignoring dir entry")
+		if hdr.Typeflag != tar.TypeReg {
+			log.Warn().Str("name", hdr.Name).Msg("ignoring entry")
 
 			continue
 		}

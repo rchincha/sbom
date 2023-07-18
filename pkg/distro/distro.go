@@ -7,6 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"sigs.k8s.io/bom/pkg/spdx"
 	"stackerbuild.io/stacker-bom/errors"
+	"stackerbuild.io/stacker-bom/pkg/distro/apk"
 	"stackerbuild.io/stacker-bom/pkg/distro/deb"
 	"stackerbuild.io/stacker-bom/pkg/distro/rpm"
 )
@@ -26,7 +27,12 @@ func InstalledPackages(doc *spdx.Document) error {
 		log.Error().Err(rpmerr).Msg("rpm: unable to get installed packages")
 	}
 
-	if deberr != nil && rpmerr != nil {
+	apkerr := apk.InstalledPackages(doc)
+	if apkerr != nil {
+		log.Error().Err(apkerr).Msg("apk: unable to get installed packages")
+	}
+
+	if deberr != nil && rpmerr != nil && apkerr != nil {
 		return errors.ErrNotFound
 	}
 
@@ -46,6 +52,10 @@ func ParsePackage(input, author, organization, license, output string) error {
 	switch mtype.String() {
 	case "application/vnd.debian.binary-package":
 		return deb.ParsePackage(input, output, author, organization, license)
+	case "application/x-rpm":
+		return rpm.ParsePackage(input, output, author, organization, license)
+	case "application/gzip": // best effort
+		return apk.ParsePackage(input, output, author, organization, license)
 	default:
 		return fmt.Errorf("%w: mime-type %s", errors.ErrUnsupported, mtype.String())
 	}
