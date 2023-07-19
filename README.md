@@ -1,4 +1,5 @@
 # stacker-bom: a SBOM workflow tool/library for container image builds
+[![build-test](https://github.com/project-stacker/stacker-bom/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/project-stacker/stacker-bom/actions/workflows/ci.yaml) [![CodeQL](https://github.com/project-zot/zot/workflows/CodeQL/badge.svg)](https://github.com/project-zot/zot/actions?query=workflow%3ACodeQL)
 
 Originally intended as a [stacker](https://stackerbuild.io) companion tool to
 help with container image builds but anyone should be able to use it.
