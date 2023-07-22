@@ -31,6 +31,8 @@ func DiscoverCmd() *cobra.Command {
 				log.Error().Err(err).Msg("discover failed")
 				os.Exit(1)
 			}
+
+			log.Info().Str("output", output).Msg("successfully discovered installed packages")
 		},
 	}
 
