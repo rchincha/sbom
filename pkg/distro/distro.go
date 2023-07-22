@@ -18,25 +18,23 @@ type Distro interface {
 
 func InstalledPackages(doc *spdx.Document) error {
 	deberr := deb.InstalledPackages(doc)
-	if deberr != nil {
-		log.Error().Err(deberr).Msg("deb: unable to get installed packages")
+	if deberr == nil {
+		return nil
 	}
 
 	rpmerr := rpm.InstalledPackages(doc)
-	if rpmerr != nil {
-		log.Error().Err(rpmerr).Msg("rpm: unable to get installed packages")
+	if rpmerr == nil {
+		return nil
 	}
 
 	apkerr := apk.InstalledPackages(doc)
-	if apkerr != nil {
-		log.Error().Err(apkerr).Msg("apk: unable to get installed packages")
+	if apkerr == nil {
+		return nil
 	}
 
-	if deberr != nil && rpmerr != nil && apkerr != nil {
-		return errors.ErrNotFound
-	}
+	log.Error().Err(apkerr).Msg("unable to get installed packages")
 
-	return nil
+	return errors.ErrNotFound
 }
 
 func ParsePackage(input, author, organization, license, output string) error {
