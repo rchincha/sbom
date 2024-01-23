@@ -16,6 +16,7 @@ stacker-bom merge --dir <bom-dir> --output <merged bom-file> --name <doc-name>
 func MergeCmd() *cobra.Command {
 	dir := ""
 	output := ""
+	namespace := ""
 	name := ""
 
 	cmd := &cobra.Command{
@@ -27,7 +28,7 @@ func MergeCmd() *cobra.Command {
 				zerolog.SetGlobalLevel(zerolog.DebugLevel)
 			}
 
-			if err := bom.MergeDocuments(dir, name, Author, Organization, output); err != nil {
+			if err := bom.MergeDocuments(dir, namespace, name, Author, Organization, output); err != nil {
 				log.Error().Err(err).Msg("merge failed")
 				os.Exit(1)
 			}
@@ -38,6 +39,8 @@ func MergeCmd() *cobra.Command {
 	_ = cmd.MarkFlagRequired("dir")
 	cmd.Flags().StringVarP(&output, "output", "o", "", "output SBOM file")
 	_ = cmd.MarkFlagRequired("output")
+	cmd.Flags().StringVarP(&namespace, "namespace", "s", "", "document namespace of output SBOM file")
+	_ = cmd.MarkFlagRequired("namespace")
 	cmd.Flags().StringVarP(&name, "name", "n", "", "document name of output SBOM file")
 	_ = cmd.MarkFlagRequired("name")
 
