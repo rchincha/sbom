@@ -49,8 +49,9 @@ func MergeMaps[K comparable, V any](map1 map[K]V, map2 map[K]V) map[K]V {
 }
 
 // MergeDocuments in a given dir.
-func MergeDocuments(dir, name, author, organization, output string) error {
+func MergeDocuments(dir, namespace, name, author, organization, output string) error {
 	sdoc := spdx.NewDocument()
+	sdoc.Namespace = namespace
 	sdoc.Name = name
 	sdoc.Creator.Person = author
 	sdoc.Creator.Organization = organization
