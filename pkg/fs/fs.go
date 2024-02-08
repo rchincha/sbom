@@ -332,9 +332,23 @@ func BuildPackage(name, author, organization, license,
 	for _, ipath := range inputPaths {
 		pinfo, err := os.Lstat(ipath)
 		if err != nil {
-			log.Error().Err(err).Str("path", ipath).Msg("unable to stat path")
+			// check if glob
+			ifiles, err1 := filepath.Glob(ipath)
+			if err1 != nil || len(ifiles) == 0 {
+				log.Error().Err(err).Str("path", ipath).Msg("unable to stat path")
 
-			return err
+				return err
+			}
+
+			for _, ifile := range ifiles {
+				log.Info().Str("file", ifile).Str("package", pkgname).Msg("adding file to package")
+
+				if err := BuildPackageFromFile(ifile, kpkg, license); err != nil {
+					return err
+				}
+			}
+
+			continue
 		}
 
 		if pinfo.IsDir() {
