@@ -110,6 +110,10 @@ func BuildPackageFromDir(input string, kdoc *k8spdx.Document, kpkg *k8spdx.Packa
 
 		fhandle, err := os.Open(path)
 		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return nil
+			}
+
 			return err
 		}
 		defer fhandle.Close()
