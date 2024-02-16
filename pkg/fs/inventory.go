@@ -24,9 +24,18 @@ type Inventory struct {
 }
 
 func isExcluded(path string, exclude []string) bool {
-	for _, e := range exclude {
-		if path == e {
+	for _, excl := range exclude {
+		if path == excl {
 			return true
+		}
+
+		// exclude entry could be a glob
+		files, _ := filepath.Glob(excl)
+
+		for _, fil := range files {
+			if path == fil {
+				return true
+			}
 		}
 	}
 
