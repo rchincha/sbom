@@ -108,7 +108,9 @@ func Verify(input, inventory, missing string) error {
 
 		if err := checkBOM(input, entry.Path); err != nil {
 			log.Error().Err(err).Str("path", entry.Path).Msg("inventory verify failed")
+
 			mcount++
+
 			sfile := spdx.NewFile()
 			sfile.SetEntity(
 				&spdx.Entity{

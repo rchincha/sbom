@@ -1,6 +1,8 @@
 module stackerbuild.io/stacker-bom
 
-go 1.20
+go 1.21.0
+
+toolchain go1.21.6
 
 require (
 	github.com/anchore/syft v0.90.0

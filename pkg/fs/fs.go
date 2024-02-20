@@ -4,7 +4,6 @@ import (
 	"crypto/sha1" //nolint:gosec // used only to produce the sha1 checksum field
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -82,7 +81,7 @@ func BuildPackageFromDir(input string, kdoc *k8spdx.Document, kpkg *k8spdx.Packa
 
 	for _, tpkg := range sdoc.Packages {
 		p := stbom.ConvertFromSyftPackage(tpkg)
-		p.SetSPDXID(fmt.Sprintf("SPDXRef-%s", p.SPDXID()))
+		p.SetSPDXID("SPDXRef-" + p.SPDXID())
 		p.LicenseConcluded = license
 		p.LicenseDeclared = license
 		tpkgs[p.SPDXID()] = p
@@ -135,7 +134,7 @@ func BuildPackageFromDir(input string, kdoc *k8spdx.Document, kpkg *k8spdx.Packa
 
 		log.Info().Str("name", info.Name()).
 			Int("size", bufsz).
-			Str("cksum", fmt.Sprintf("SHA256:%s", hex.EncodeToString(cksumSHA256[:]))).
+			Str("cksum", "SHA256:"+hex.EncodeToString(cksumSHA256[:])).
 			Msg("file entry detected")
 
 		kfile := k8spdx.NewFile()
@@ -149,6 +148,7 @@ func BuildPackageFromDir(input string, kdoc *k8spdx.Document, kpkg *k8spdx.Packa
 			},
 		)
 		kfile.LicenseInfoInFile = license
+
 		if err := kpkg.AddFile(kfile); err != nil {
 			log.Error().Err(err).Msg("unable to add file to package")
 
@@ -279,7 +279,7 @@ func BuildPackageFromFile(input string, kpkg *k8spdx.Package, license string) er
 
 	log.Info().Str("name", ifo.Name()).
 		Int("size", bufsz).
-		Str("cksum", fmt.Sprintf("SHA256:%s", hex.EncodeToString(cksumSHA256[:]))).
+		Str("cksum", "SHA256:"+hex.EncodeToString(cksumSHA256[:])).
 		Msg("file entry detected")
 
 	kfile := k8spdx.NewFile()
@@ -309,7 +309,7 @@ func BuildPackage(name, author, organization, license,
 	kdoc.Name = name
 	kdoc.Creator.Person = author
 	kdoc.Creator.Organization = organization
-	kdoc.Creator.Tool = []string{fmt.Sprintf("stackerbuild.io/sbom@%s", buildgen.Commit)}
+	kdoc.Creator.Tool = []string{"stackerbuild.io/sbom@" + buildgen.Commit}
 
 	kpkg := &k8spdx.Package{
 		Entity: k8spdx.Entity{

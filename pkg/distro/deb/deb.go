@@ -38,7 +38,7 @@ func ParsePackage(input, output, author, organization, license string) error {
 	sdoc.Creator.Person = author
 	sdoc.Creator.Organization = organization
 	sdoc.Creator.Tool = []string{"stackerbuild.io/sbom"}
-	sdoc.Creator.Tool = []string{fmt.Sprintf("stackerbuild.io/sbom@%s", buildgen.Commit)}
+	sdoc.Creator.Tool = []string{"stackerbuild.io/sbom@" + buildgen.Commit}
 
 	spkg := &spdx.Package{
 		Entity: spdx.Entity{
@@ -96,7 +96,7 @@ func ParsePackage(input, output, author, organization, license string) error {
 
 		log.Info().Str("name", hdr.Name).
 			Int("size", bufsz).
-			Str("cksum", fmt.Sprintf("SHA256:%s", hex.EncodeToString(cksumSHA256[:]))).
+			Str("cksum", "SHA256:"+hex.EncodeToString(cksumSHA256[:])).
 			Msg("file entry detected")
 
 		sfile := &spdx.File{
@@ -221,6 +221,7 @@ func InstalledPackages(doc *spdx.Document) error {
 				rgxp := regexp.MustCompile(`^(?P<Key>[a-zA-Z-]+?):\s*(?P<Value>.*)$`)
 				params := rgxp.FindStringSubmatch(line)
 				key := params[rgxp.SubexpIndex("Key")]
+
 				if rgxp.SubexpIndex("Value") < 0 {
 					lastkey = key
 				} else {
@@ -349,7 +350,7 @@ func InstalledPackage(doc *spdx.Document, pkg Package, path string) error {
 
 		log.Info().Str("name", info.Name()).
 			Int("size", bufsz).
-			Str("cksum", fmt.Sprintf("SHA256:%s", hex.EncodeToString(cksumSHA256[:]))).
+			Str("cksum", "SHA256:"+hex.EncodeToString(cksumSHA256[:])).
 			Msg("file entry detected")
 
 		sfile := spdx.NewFile()

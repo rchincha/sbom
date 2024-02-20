@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -73,7 +72,7 @@ func ParsePackage(input, output, author, organization, license string) error {
 	sdoc.Creator.Person = author
 	sdoc.Creator.Organization = organization
 	sdoc.Creator.Tool = []string{"stackerbuild.io/sbom"}
-	sdoc.Creator.Tool = []string{fmt.Sprintf("stackerbuild.io/sbom@%s", buildgen.Commit)}
+	sdoc.Creator.Tool = []string{"stackerbuild.io/sbom@" + buildgen.Commit}
 
 	var pkglicense string
 
@@ -158,12 +157,12 @@ func ParsePackage(input, output, author, organization, license string) error {
 
 		log.Info().Str("name", hdr.Name).
 			Int("size", bufsz).
-			Str("cksum", fmt.Sprintf("SHA256:%s", hex.EncodeToString(cksumSHA256[:]))).
+			Str("cksum", "SHA256:"+hex.EncodeToString(cksumSHA256[:])).
 			Msg("file entry detected")
 
 		sfile := &spdx.File{
 			Entity: spdx.Entity{
-				Name: fmt.Sprintf("/%s", hdr.Name),
+				Name: "/" + hdr.Name,
 				Checksum: map[string]string{
 					"SHA1":   hex.EncodeToString(cksumSHA1[:]),
 					"SHA256": hex.EncodeToString(cksumSHA256[:]),
@@ -246,7 +245,7 @@ func InstalledPackage(doc *spdx.Document, pkg *IndexEntry, files []string) error
 
 		log.Info().Str("name", info.Name()).
 			Int("size", bufsz).
-			Str("cksum", fmt.Sprintf("SHA256:%s", hex.EncodeToString(cksumSHA256[:]))).
+			Str("cksum", "SHA256:"+hex.EncodeToString(cksumSHA256[:])).
 			Msg("file entry detected")
 
 		sfile := spdx.NewFile()

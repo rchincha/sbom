@@ -5,7 +5,7 @@ COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),$(COMMIT_HAS
 BINDIR=bin
 TOOLSDIR := $(shell pwd)/hack/tools
 GOLINTER := $(TOOLSDIR)/bin/golangci-lint
-GOLINTER_VERSION := v1.52.2
+GOLINTER_VERSION := v1.56.2
 
 # OCI registry
 ZOT := $(TOOLSDIR)/bin/zot
