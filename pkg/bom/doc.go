@@ -15,7 +15,7 @@ func NewDocument(author, organization string) *spdx.Document {
 	doc := spdx.NewDocument()
 	doc.Creator.Person = author
 	doc.Creator.Organization = organization
-	doc.Creator.Tool = []string{fmt.Sprintf("stackerbuild.io/sbom@%s", buildgen.Commit)}
+	doc.Creator.Tool = []string{"stackerbuild.io/sbom@" + buildgen.Commit}
 
 	return doc
 }
@@ -55,7 +55,7 @@ func MergeDocuments(dir, namespace, name, author, organization, output string) e
 	sdoc.Name = name
 	sdoc.Creator.Person = author
 	sdoc.Creator.Organization = organization
-	sdoc.Creator.Tool = []string{fmt.Sprintf("stackerbuild.io/stacker-bom@%s", buildgen.Commit)}
+	sdoc.Creator.Tool = []string{"stackerbuild.io/stacker-bom@" + buildgen.Commit}
 
 	mcount := 0
 
@@ -79,6 +79,7 @@ func MergeDocuments(dir, namespace, name, author, organization, output string) e
 		sdoc.Packages = MergeMaps(sdoc.Packages, doc.Packages)
 
 		log.Info().Str("path", path).Msg("file found for merging")
+
 		mcount++
 
 		return nil
