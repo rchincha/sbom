@@ -103,7 +103,8 @@ func BuildPackageFromDir(input string, kdoc *k8spdx.Document, kpkg *k8spdx.Packa
 			return err
 		}
 
-		if info.IsDir() {
+		// we compute checksums below, so consider only regular files
+		if !info.Mode().IsRegular() {
 			return nil
 		}
 
