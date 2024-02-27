@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/rs/zerolog/log"
@@ -95,6 +96,8 @@ func Verify(input, inventory, missing string) error {
 	mdoc := bom.NewDocument("", "")
 	mdoc.Name = "missing-files-document"
 
+	var mdocMtx sync.Mutex
+
 	var mcount atomic.Uint64
 
 	backlog := 1024
@@ -128,7 +131,11 @@ func Verify(input, inventory, missing string) error {
 							},
 						)
 
-						if err := mdoc.AddFile(sfile); err != nil {
+						mdocMtx.Lock()
+						err := mdoc.AddFile(sfile)
+						mdocMtx.Unlock()
+
+						if err != nil {
 							log.Error().Err(err).Msg("unable to add file to package")
 
 							return err
