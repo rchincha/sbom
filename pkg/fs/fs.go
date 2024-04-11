@@ -134,9 +134,10 @@ func BuildPackageFromDir(input string, kdoc *k8spdx.Document, kpkg *k8spdx.Packa
 		cksumSHA256 := sha256.Sum256(buf)
 
 		log.Info().Str("name", info.Name()).
+			Str("path", path).
 			Int("size", bufsz).
 			Str("cksum", "SHA256:"+hex.EncodeToString(cksumSHA256[:])).
-			Msg("file entry detected")
+			Msg("file entry detected inside dir")
 
 		kfile := k8spdx.NewFile()
 		kfile.SetEntity(
@@ -238,7 +239,7 @@ func BuildPackageFromFile(input string, kpkg *k8spdx.Package, license string) er
 		conv.LicenseConcluded = license
 		tfils[conv.SPDXID()] = conv
 
-		pfo, err := os.Lstat(conv.Name)
+		pfo, err := os.Lstat(conv.FileName)
 		if err != nil {
 			log.Error().Err(err).Str("path", conv.Name).Msg("unable to find path")
 
@@ -279,6 +280,7 @@ func BuildPackageFromFile(input string, kpkg *k8spdx.Package, license string) er
 	cksumSHA256 := sha256.Sum256(buf)
 
 	log.Info().Str("name", ifo.Name()).
+		Str("path", input).
 		Int("size", bufsz).
 		Str("cksum", "SHA256:"+hex.EncodeToString(cksumSHA256[:])).
 		Msg("file entry detected")
