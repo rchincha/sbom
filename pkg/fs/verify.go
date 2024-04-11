@@ -34,7 +34,7 @@ func checkBOM(input, pathEntry string) error {
 		for _, file := range pkg.Files() {
 			symlink, err := filepath.EvalSymlinks(file.Name)
 			if err != nil {
-				log.Error().Err(err).Str("path", file.Name).Msg("unable to resolve symlink")
+				log.Error().Err(err).Str("path", file.Name).Str("package", pkg.Name).Msg("unable to resolve symlink")
 
 				return err
 			}
