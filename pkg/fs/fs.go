@@ -151,6 +151,8 @@ func BuildPackageFromDir(input string, kdoc *k8spdx.Document, kpkg *k8spdx.Packa
 		)
 		kfile.LicenseInfoInFile = license
 
+		log.Error().Interface("conv3 kfile", kfile).Msg("CONV")
+
 		if err := kpkg.AddFile(kfile); err != nil {
 			log.Error().Err(err).Msg("unable to add file to package")
 
@@ -251,7 +253,7 @@ func BuildPackageFromFile(input string, kpkg *k8spdx.Package, license string) er
 			continue
 		}
 
-		log.Info().Interface("conv", conv).Msg("CONV")
+		log.Error().Interface("conv", conv).Msg("CONV")
 
 		if err := kpkg.AddFile(conv); err != nil {
 			log.Error().Err(err).Str("path", conv.Name).Msg("unable to add file to package")
@@ -297,6 +299,8 @@ func BuildPackageFromFile(input string, kpkg *k8spdx.Package, license string) er
 			},
 		},
 	)
+
+	log.Error().Interface("conv2 kfile", kfile).Msg("CONV")
 
 	if err := kpkg.AddFile(kfile); err != nil {
 		log.Error().Err(err).Msg("unable to add file to package")
