@@ -10,7 +10,7 @@ func ConvertFromSyftFile(fil *v2_3.File) *spdx.File {
 	kfil := &spdx.File{
 		Entity: spdx.Entity{
 			ID:               string(fil.FileSPDXIdentifier),
-			Name:             fil.FileName,
+			FileName:         fil.FileName,
 			CopyrightText:    fil.FileCopyrightText,
 			LicenseConcluded: fil.LicenseConcluded,
 			LicenseComments:  fil.LicenseComments,
