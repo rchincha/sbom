@@ -1,6 +1,7 @@
 package bom
 
 import (
+	"github.com/rs/zerolog/log"
 	"github.com/spdx/tools-golang/spdx/v2/v2_3"
 	"sigs.k8s.io/bom/pkg/spdx"
 )
@@ -103,6 +104,7 @@ func ConvertFromSyftPackage(pkg *v2_3.Package) *spdx.Package {
 	}
 
 	for _, fil := range pkg.Files {
+		log.Error().Interface("converted", ConvertFromSyftFile(fil)).Msg("SYFT")
 		_ = kpkg.AddFile(ConvertFromSyftFile(fil))
 	}
 
