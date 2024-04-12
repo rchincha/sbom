@@ -251,6 +251,8 @@ func BuildPackageFromFile(input string, kpkg *k8spdx.Package, license string) er
 			continue
 		}
 
+		log.Info().Interface("conv", conv).Msg("CONV")
+
 		if err := kpkg.AddFile(conv); err != nil {
 			log.Error().Err(err).Str("path", conv.Name).Msg("unable to add file to package")
 
