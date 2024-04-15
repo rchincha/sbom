@@ -142,7 +142,7 @@ func BuildPackageFromDir(input string, kdoc *k8spdx.Document, kpkg *k8spdx.Packa
 		kfile := k8spdx.NewFile()
 		kfile.SetEntity(
 			&k8spdx.Entity{
-				Name: path,
+				FileName: path,
 				Checksum: map[string]string{
 					"SHA1":   hex.EncodeToString(cksumSHA1[:]),
 					"SHA256": hex.EncodeToString(cksumSHA256[:]),
@@ -150,6 +150,7 @@ func BuildPackageFromDir(input string, kdoc *k8spdx.Document, kpkg *k8spdx.Packa
 			},
 		)
 		kfile.LicenseInfoInFile = license
+		kfile.BuildID("")
 
 		log.Error().Interface("conv3 kfile", kfile).Msg("CONV")
 
@@ -292,13 +293,14 @@ func BuildPackageFromFile(input string, kpkg *k8spdx.Package, license string) er
 	kfile := k8spdx.NewFile()
 	kfile.SetEntity(
 		&k8spdx.Entity{
-			Name: input,
+			FileName: input,
 			Checksum: map[string]string{
 				"SHA1":   hex.EncodeToString(cksumSHA1[:]),
 				"SHA256": hex.EncodeToString(cksumSHA256[:]),
 			},
 		},
 	)
+	kfile.BuildID("")
 
 	log.Error().Interface("conv2 kfile", kfile).Msg("CONV")
 

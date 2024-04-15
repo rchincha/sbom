@@ -145,7 +145,7 @@ func ParsePackage(input, output, author, organization, license string) error {
 		sfile.LicenseInfoInFile = pkglicense
 		sfile.SetEntity(
 			&spdx.Entity{
-				Name: finfo.Name(),
+				FileName: finfo.Name(),
 				Checksum: map[string]string{
 					"SHA1":   hex.EncodeToString(cksumSHA1[:]),
 					"SHA256": hex.EncodeToString(cksumSHA256[:]),

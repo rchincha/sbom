@@ -101,7 +101,7 @@ func ParsePackage(input, output, author, organization, license string) error {
 
 		sfile := &spdx.File{
 			Entity: spdx.Entity{
-				Name: hdr.Name[1:],
+				FileName: hdr.Name[1:],
 				Checksum: map[string]string{
 					"SHA1":   hex.EncodeToString(cksumSHA1[:]),
 					"SHA256": hex.EncodeToString(cksumSHA256[:]),

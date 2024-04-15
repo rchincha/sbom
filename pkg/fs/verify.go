@@ -32,21 +32,21 @@ func checkBOM(input, pathEntry string) error {
 
 	for _, pkg := range doc.Packages {
 		for _, file := range pkg.Files() {
-			symlink, err := filepath.EvalSymlinks(file.Name)
+			symlink, err := filepath.EvalSymlinks(file.FileName)
 			if err != nil {
-				log.Error().Err(err).Str("path", file.Name).Str("package", pkg.Name).Msg("unable to resolve symlink")
+				log.Error().Err(err).Str("path", file.FileName).Str("package", pkg.Name).Msg("unable to resolve symlink")
 
 				return err
 			}
 
-			if file.Name != pathEntry && symlink != pathEntry {
+			if file.FileName != pathEntry && symlink != pathEntry {
 				continue
 			}
 
 			file.Entity.Opts = &spdx.ObjectOptions{}
 
-			if err := file.ReadSourceFile(file.Name); err != nil {
-				log.Error().Err(err).Str("path", file.Name).Msg("doesn't match entry in SBOM document")
+			if err := file.ReadSourceFile(file.FileName); err != nil {
+				log.Error().Err(err).Str("path", file.FileName).Msg("doesn't match entry in SBOM document")
 
 				return err
 			}
@@ -58,9 +58,9 @@ func checkBOM(input, pathEntry string) error {
 	}
 
 	for _, file := range doc.Files {
-		symlink, err := filepath.EvalSymlinks(file.Name)
+		symlink, err := filepath.EvalSymlinks(file.FileName)
 		if err != nil {
-			log.Error().Err(err).Str("path", file.Name).Msg("unable to resolve symlink")
+			log.Error().Err(err).Str("path", file.FileName).Msg("unable to resolve symlink")
 
 			return err
 		}
@@ -126,7 +126,7 @@ func Verify(input, inventory, missing string) error {
 						sfile := spdx.NewFile()
 						sfile.SetEntity(
 							&spdx.Entity{
-								Name:     entry.Path,
+								FileName: entry.Path,
 								Checksum: map[string]string{"SHA256": strings.Split(entry.Checksum, ":")[1]},
 							},
 						)
