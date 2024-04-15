@@ -130,6 +130,7 @@ func Verify(input, inventory, missing string) error {
 								Checksum: map[string]string{"SHA256": strings.Split(entry.Checksum, ":")[1]},
 							},
 						)
+						sfile.BuildID("")
 
 						mdocMtx.Lock()
 						err := mdoc.AddFile(sfile)

@@ -170,6 +170,8 @@ func ParsePackage(input, output, author, organization, license string) error {
 			},
 			LicenseInfoInFile: license,
 		}
+		sfile.BuildID("")
+
 		if err := spkg.AddFile(sfile); err != nil {
 			log.Error().Err(err).Msg("unable to add file to package")
 
