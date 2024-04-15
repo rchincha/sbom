@@ -65,14 +65,14 @@ func checkBOM(input, pathEntry string) error {
 			return err
 		}
 
-		if file.Name != pathEntry && file.Name != symlink {
+		if file.FileName != pathEntry && file.FileName != symlink {
 			continue
 		}
 
 		file.Entity.Opts = &spdx.ObjectOptions{}
 
-		if err := file.ReadSourceFile(file.Name); err != nil {
-			log.Error().Err(err).Str("path", file.Name).Msg("doesn't match entry in SBOM document")
+		if err := file.ReadSourceFile(file.FileName); err != nil {
+			log.Error().Err(err).Str("path", file.FileName).Msg("doesn't match entry in SBOM document")
 
 			return err
 		}
